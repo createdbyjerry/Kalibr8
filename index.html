@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#212121">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="K8">
+  <title>Kalibr8 (K8) — UAV Damage Survey</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/k8-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="rail" aria-label="Main">
+      <div class="logo" title="Kalibr8 (K8)"><img src="assets/k8-mark.svg" alt="Kalibr8" width="32" height="22"></div>
+      <div id="rail-nav" class="rail-nav"></div>
+      <button id="btn-layers" class="rail-btn" title="Map layers" aria-label="Map layers"></button>
+      <div class="grow"></div>
+      <div id="rail-net" class="rail-net" aria-hidden="true"></div>
+      <button id="btn-settings" class="rail-btn" title="Settings" aria-label="Settings"></button>
+    </nav>
+
+    <aside id="drawer" class="drawer" aria-label="Panel"></aside>
+
+    <main id="map" class="map">
+      <button id="drawer-open" class="drawer-open" aria-label="Open panel"></button>
+      <div class="topbar">
+        <div id="stepper" class="stepper" aria-label="Survey workflow"></div>
+        <div class="pills">
+          <button id="outbox-pill" class="pill warn" hidden></button>
+          <button id="link-pill" class="pill"></button>
+          <span id="net-pill" class="pill"></span>
+        </div>
+      </div>
+      <div id="hud" class="hud" hidden></div>
+      <div id="drawbar" class="drawbar" hidden></div>
+      <div class="zoom">
+        <button id="zoom-in" aria-label="Zoom in">+</button>
+        <button id="zoom-out" aria-label="Zoom out">−</button>
+        <button id="btn-fit" aria-label="Fit to survey area"></button>
+      </div>
+      <div id="pip" class="pip" hidden title="Tap to enlarge">
+        <canvas aria-label="Live camera feed"></canvas>
+        <span class="pip-meta"></span>
+      </div>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="print-root"></div>
+  <script src="js/app.bundle.js" defer></script>
+</body>
+</html>
