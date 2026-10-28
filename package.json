@@ -1,0 +1,13 @@
+{
+  "name": "kalibr8",
+  "version": "1.0.0",
+  "description": "Kalibr8 (K8) — offline UAV damage survey prototype",
+  "scripts": {
+    "build": "esbuild js/main.js --bundle --format=iife --target=safari15 --outfile=js/app.bundle.js",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  },
+  "private": true
+}
