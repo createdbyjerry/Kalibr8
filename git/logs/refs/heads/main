@@ -1,3 +1,0 @@
-0000000000000000000000000000000000000000 2eda28172b3a4db27166c7e6c74479c0f0210203 Claude <noreply@anthropic.com> 1793198301 -0600	commit (initial): Offline UAV damage survey prototype
-2eda28172b3a4db27166c7e6c74479c0f0210203 3b12cff5ac8d0af818fe9429e9f6bd26e4b6ae93 Claude <noreply@anthropic.com> 1793198488 -0600	commit: Bundle scripts so index.html works when opened directly from disk
-3b12cff5ac8d0af818fe9429e9f6bd26e4b6ae93 ccd60d90105f0e21e21f05b1c8099d96f9e448dd Claude <noreply@anthropic.com> 1793208908 -0600	commit: Rebrand prototype as Kalibr8 (K8)
