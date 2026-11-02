@@ -217,7 +217,7 @@
     return fresh();
   }
   var state = load();
-  var ui = { panel: "drones", selectedFlight: null, selectedFinding: null, annotateMode: false, drawMode: false, draft: null, filters: { severity: /* @__PURE__ */ new Set(), q: "" }, layers: { buildings: true, plan: true, findings: true, annotations: true } };
+  var ui = { panel: "drones", selectedFlight: null, selectedFinding: null, annotateMode: false, drawMode: false, draft: null, filters: { severity: /* @__PURE__ */ new Set(), q: "", status: "all" }, layers: { buildings: true, plan: true, findings: true, annotations: true } };
   var saveT = null;
   function save() {
     clearTimeout(saveT);
@@ -366,6 +366,7 @@
     warning: "M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z",
     refresh: "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
     print: "M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z",
+    back: "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z",
     arrow: "M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z",
     sd: "M18 2h-8L4.02 8 4 20c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 6h-2V4h2v4zm3 0h-2V4h2v4zm3 0h-2V4h2v4z"
   };
@@ -1655,7 +1656,8 @@
     filteredAnnotations: () => filteredAnnotations,
     filteredFindings: () => filteredFindings,
     render: () => render3,
-    scrollToSelected: () => scrollToSelected
+    scrollToSelected: () => scrollToSelected,
+    showUnverified: () => showUnverified
   });
 
   // js/views/annotate.js
@@ -1777,8 +1779,11 @@
   function filteredFindings(flightIds) {
     const q = ui.filters.q.trim().toLowerCase();
     const sevs = ui.filters.severity;
+    const status = ui.filters.status || "all";
     return state.findings.filter((f) => {
       if (!flightIds.includes(f.flightId)) return false;
+      if (status === "unverified" && f.verified) return false;
+      if (status === "verified" && !f.verified) return false;
       const sev = f.severityFinal || f.severity;
       if (sevs.size && !sevs.has(sev)) return false;
       if (q) {
@@ -1901,7 +1906,14 @@
           } }, `Annotations (${anns.length})`),
           tab === "structures" ? btn("Accept AI \u2265 90%", { variant: "text", small: true, onClick: () => bulkAccept(ids, app2) }) : null
         ),
-        tab === "structures" ? fs.length ? h("div", { class: "cards" }, fs.map((f) => findingCard(app2, f))) : emptyState("No structures match these filters.") : anns.length ? h("div", { class: "cards" }, anns.map((a) => annCard(app2, a))) : emptyState("There are no annotations. Use Annotate during a flight to drop notes on the map.")
+        tab === "structures" ? statusFilter(app2, ids) : null,
+        tab === "structures" ? fs.length ? h("div", { class: "cards" }, fs.map((f) => findingCard(app2, f))) : emptyState(
+          ui.filters.status === "unverified" ? "Every structure here is verified." : "No structures match these filters.",
+          ui.filters.status !== "all" ? btn("Show all structures", { variant: "text", small: true, onClick: () => {
+            ui.filters.status = "all";
+            app2.rerender();
+          } }) : null
+        ) : anns.length ? h("div", { class: "cards" }, anns.map((a) => annCard(app2, a))) : emptyState("There are no annotations. Use Annotate during a flight to drop notes on the map.")
       ),
       h("div", { class: "drawer-foot" }, btn("Next: generate report", { icon: "arrow", onClick: () => app2.go("reports") }))
     );
@@ -1958,6 +1970,7 @@
           f.severityFinal = k;
           f.verified = true;
           emit("finding");
+          afterVerify(app2);
         } }, h("i"), SEVERITY[k].label))),
         notes,
         h(
@@ -1981,11 +1994,32 @@
             f.verified = true;
             if (!f.severityFinal) f.severityFinal = f.severity;
             emit("finding");
+            afterVerify(app2);
           } }),
           btn("Next unverified", { small: true, variant: "dark", icon: "arrow", onClick: () => nextUnverified(app2) })
         )
       )
     );
+  }
+  function statusFilter(app2, ids) {
+    const scoped = state.findings.filter((f) => ids.includes(f.flightId));
+    const counts = { all: scoped.length, unverified: scoped.filter((f) => !f.verified).length, verified: scoped.filter((f) => f.verified).length };
+    const labels = { all: "All", unverified: "Unverified", verified: "Verified" };
+    const cur = ui.filters.status || "all";
+    return h(
+      "div",
+      { class: "status-seg", role: "group", "aria-label": "Verification status" },
+      Object.keys(labels).map((k) => h("button", { type: "button", class: cur === k ? "on" : "", "aria-pressed": String(cur === k), onclick: () => {
+        ui.filters.status = k;
+        ui.selectedFinding = null;
+        app2.rerender();
+      } }, `${labels[k]} (${counts[k]})`))
+    );
+  }
+  function showUnverified() {
+    tab = "structures";
+    ui.filters.status = "unverified";
+    ui.selectedFinding = null;
   }
   function annCard(app2, a) {
     return h(
@@ -1999,6 +2033,9 @@
       h("p", {}, a.text),
       h("div", { class: "chips" }, a.tags.map((t) => chip(t)))
     );
+  }
+  function afterVerify(app2) {
+    if (ui.filters.status === "unverified") nextUnverified(app2);
   }
   function nextUnverified(app2) {
     const list = filteredFindings(scopeIds()).filter((f) => !f.verified).sort((a, b2) => SEVERITY[b2.severity].rank - SEVERITY[a.severity].rank);
@@ -2150,7 +2187,16 @@
             h("span", {}, `${t.verified}/${t.structures} verified`),
             h("b", {}, money(t.cost))
           ),
-          t.verified < t.structures ? h("p", { class: "note warn" }, icon("warning"), `${t.structures - t.verified} structures still show AI-only categories. They\u2019ll be marked \u201Cunverified\u201D in the report.`) : null,
+          t.verified < t.structures ? h(
+            "div",
+            { class: "note warn note-action" },
+            icon("warning"),
+            h("span", { class: "grow" }, `${t.structures - t.verified} structures still show AI-only categories. They\u2019ll be marked \u201Cunverified\u201D in the report.`),
+            btn("Verify now", { variant: "text", small: true, onClick: () => {
+              showUnverified();
+              app2.go("review");
+            } })
+          ) : null,
           btn("Generate report", { icon: "chart", disabled: !form.flightIds.length, onClick: () => {
             const r = generate();
             openPreview(app2, r);
@@ -2170,7 +2216,8 @@
             r.status === "draft" || r.status === "failed" ? btn("Send", { small: true, icon: "send", onClick: () => send(app2, r) }) : null
           )
         )))
-      )
+      ),
+      h("div", { class: "drawer-foot start" }, btn("Back: review damage", { variant: "dark", icon: "back", onClick: () => app2.go("review") }))
     );
   }
   function generate() {

@@ -16,8 +16,11 @@ const scopeIds = () => {
 export function filteredFindings(flightIds) {
   const q = ui.filters.q.trim().toLowerCase();
   const sevs = ui.filters.severity;
+  const status = ui.filters.status || 'all';
   return state.findings.filter((f) => {
     if (!flightIds.includes(f.flightId)) return false;
+    if (status === 'unverified' && f.verified) return false;
+    if (status === 'verified' && !f.verified) return false;
     const sev = f.severityFinal || f.severity;
     if (sevs.size && !sevs.has(sev)) return false;
     if (q) {
@@ -77,8 +80,11 @@ export function render(app) {
         h('button', { class: tab === 'structures' ? 'on' : '', onclick: () => { tab = 'structures'; app.rerender(); } }, `Structures (${fs.length})`),
         h('button', { class: tab === 'annotations' ? 'on' : '', onclick: () => { tab = 'annotations'; app.rerender(); } }, `Annotations (${anns.length})`),
         tab === 'structures' ? btn('Accept AI ≥ 90%', { variant: 'text', small: true, onClick: () => bulkAccept(ids, app) }) : null),
+      tab === 'structures' ? statusFilter(app, ids) : null,
       tab === 'structures'
-        ? (fs.length ? h('div', { class: 'cards' }, fs.map((f) => findingCard(app, f))) : emptyState('No structures match these filters.'))
+        ? (fs.length ? h('div', { class: 'cards' }, fs.map((f) => findingCard(app, f)))
+          : emptyState(ui.filters.status === 'unverified' ? 'Every structure here is verified.' : 'No structures match these filters.',
+            ui.filters.status !== 'all' ? btn('Show all structures', { variant: 'text', small: true, onClick: () => { ui.filters.status = 'all'; app.rerender(); } }) : null))
         : (anns.length ? h('div', { class: 'cards' }, anns.map((a) => annCard(app, a))) : emptyState('There are no annotations. Use Annotate during a flight to drop notes on the map.'))),
     h('div', { class: 'drawer-foot' }, btn('Next: generate report', { icon: 'arrow', onClick: () => app.go('reports') })));
 }
@@ -107,16 +113,30 @@ function findingCard(app, f) {
         kv('AI suggestion', `${SEVERITY[f.severity].label} (${Math.round(f.confidence * 100)}%)`),
         kv('Stories', b.stories)),
       h('div', { class: 'eyebrow' }, 'Damage category'),
-      h('div', { class: 'sev-seg' }, SEVERITY_ORDER.map((k) => h('button', { class: sev === k ? 'on' : '', style: { '--c': SEVERITY[k].color }, onclick: () => { f.severityFinal = k; f.verified = true; emit('finding'); } }, h('i'), SEVERITY[k].label))),
+      h('div', { class: 'sev-seg' }, SEVERITY_ORDER.map((k) => h('button', { class: sev === k ? 'on' : '', style: { '--c': SEVERITY[k].color }, onclick: () => { f.severityFinal = k; f.verified = true; emit('finding'); afterVerify(app); } }, h('i'), SEVERITY[k].label))),
       notes,
       h('div', { class: 'grid2' },
         h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Loss override ($)'),
           h('input', { class: 'input', type: 'number', inputmode: 'numeric', placeholder: money(findingCost({ ...f, costOverride: null })), value: f.costOverride ?? '', onchange: (e) => { f.costOverride = e.target.value === '' ? null : +e.target.value; emit('finding'); } })),
         h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Ground photo'), btn(f.photo ? 'Replace photo' : 'Attach photo', { variant: 'dark', small: true, icon: 'image', onClick: () => fileIn.click() }), fileIn)),
       h('div', { class: 'row-actions right' },
-        btn(f.verified ? 'Verified' : 'Confirm AI category', { variant: f.verified ? 'dark' : 'primary', small: true, icon: 'check', onClick: () => { f.verified = true; if (!f.severityFinal) f.severityFinal = f.severity; emit('finding'); } }),
+        btn(f.verified ? 'Verified' : 'Confirm AI category', { variant: f.verified ? 'dark' : 'primary', small: true, icon: 'check', onClick: () => { f.verified = true; if (!f.severityFinal) f.severityFinal = f.severity; emit('finding'); afterVerify(app); } }),
         btn('Next unverified', { small: true, variant: 'dark', icon: 'arrow', onClick: () => nextUnverified(app) }))));
 }
+
+// All / Unverified / Verified switch above the structure list, so the pilot can
+// work through every AI-only category or re-check ones already verified.
+function statusFilter(app, ids) {
+  const scoped = state.findings.filter((f) => ids.includes(f.flightId));
+  const counts = { all: scoped.length, unverified: scoped.filter((f) => !f.verified).length, verified: scoped.filter((f) => f.verified).length };
+  const labels = { all: 'All', unverified: 'Unverified', verified: 'Verified' };
+  const cur = ui.filters.status || 'all';
+  return h('div', { class: 'status-seg', role: 'group', 'aria-label': 'Verification status' },
+    Object.keys(labels).map((k) => h('button', { type: 'button', class: cur === k ? 'on' : '', 'aria-pressed': String(cur === k), onclick: () => { ui.filters.status = k; ui.selectedFinding = null; app.rerender(); } }, `${labels[k]} (${counts[k]})`)));
+}
+
+// Used by Reports: jump back to Review showing only the structures still on AI-only categories.
+export function showUnverified() { tab = 'structures'; ui.filters.status = 'unverified'; ui.selectedFinding = null; }
 
 function annCard(app, a) {
   return h('div', { class: `acard ${ui.selectedFinding === a.id ? 'sel' : ''}`, onclick: () => { ui.selectedFinding = a.id; app.map.centerOn(a.x, a.y); openAnnotation(app, { id: a.id }); } },
@@ -124,6 +144,9 @@ function annCard(app, a) {
     h('p', {}, a.text),
     h('div', { class: 'chips' }, a.tags.map((t) => chip(t))));
 }
+
+// In the Unverified view a verified card drops out of the list, so open the next one.
+function afterVerify(app) { if (ui.filters.status === 'unverified') nextUnverified(app); }
 
 function nextUnverified(app) {
   const list = filteredFindings(scopeIds()).filter((f) => !f.verified).sort((a, b) => SEVERITY[b.severity].rank - SEVERITY[a.severity].rank);

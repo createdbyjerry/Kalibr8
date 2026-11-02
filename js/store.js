@@ -36,7 +36,7 @@ function load() {
 
 export const state = load();
 // Live-only (not persisted)
-export const ui = { panel: 'drones', selectedFlight: null, selectedFinding: null, annotateMode: false, drawMode: false, draft: null, filters: { severity: new Set(), q: '' }, layers: { buildings: true, plan: true, findings: true, annotations: true } };
+export const ui = { panel: 'drones', selectedFlight: null, selectedFinding: null, annotateMode: false, drawMode: false, draft: null, filters: { severity: new Set(), q: '', status: 'all' }, layers: { buildings: true, plan: true, findings: true, annotations: true } };
 
 let saveT = null;
 export function save() {

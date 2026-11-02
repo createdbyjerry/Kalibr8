@@ -4,6 +4,7 @@ import { state, ui, emit, save, nextId, totalsFor, buildingById, findingCost, fl
 import { SEVERITY, SEVERITY_ORDER, fmtLatLon, toLatLon, city, bbox } from '../geo.js';
 import { h, icon, btn, chip, money, fmtTime, fmtDur, toast, modal, field, drawerHeader, emptyState } from '../ui.js';
 import { thumb } from '../feed.js';
+import { showUnverified } from './review.js';
 
 export const REPORT_TYPES = {
   pda: { label: 'FEMA Preliminary Damage Assessment (PDA) — UAS imagery summary', short: 'FEMA PDA summary', recipient: 'FEMA Region IV — Joint PDA Team' },
@@ -41,7 +42,9 @@ export function render(app) {
           field('Notes for reviewer', h('textarea', { class: 'input', rows: 2, oninput: (e) => { form.notes = e.target.value; } }, form.notes)),
           h('div', { class: 'mini-sum' },
             h('span', {}, `${t.structures} structures`), h('span', {}, `${t.damaged} damaged`), h('span', {}, `${t.verified}/${t.structures} verified`), h('b', {}, money(t.cost))),
-          t.verified < t.structures ? h('p', { class: 'note warn' }, icon('warning'), `${t.structures - t.verified} structures still show AI-only categories. They’ll be marked “unverified” in the report.`) : null,
+          t.verified < t.structures ? h('div', { class: 'note warn note-action' }, icon('warning'),
+            h('span', { class: 'grow' }, `${t.structures - t.verified} structures still show AI-only categories. They’ll be marked “unverified” in the report.`),
+            btn('Verify now', { variant: 'text', small: true, onClick: () => { showUnverified(); app.go('review'); } })) : null,
           btn('Generate report', { icon: 'chart', disabled: !form.flightIds.length, onClick: () => { const r = generate(); openPreview(app, r); } })),
       state.reports.length ? h('div', { class: 'list-head' }, h('span', {}, 'Saved reports')) : null,
       h('div', { class: 'cards' }, [...state.reports].reverse().map((r) => h('div', { class: 'rcard' },
@@ -51,6 +54,7 @@ export function render(app) {
         h('div', { class: 'row-actions right' },
           btn('Open', { variant: 'dark', small: true, onClick: () => openPreview(app, r) }),
           r.status === 'draft' || r.status === 'failed' ? btn('Send', { small: true, icon: 'send', onClick: () => send(app, r) }) : null))))),
+    h('div', { class: 'drawer-foot start' }, btn('Back: review damage', { variant: 'dark', icon: 'back', onClick: () => app.go('review') })),
   );
 }
 
