@@ -244,14 +244,18 @@ input[type=range] { width: 100%; accent-color: var(--primary); height: 28px; }
 .est-item.warn b { color: var(--warning); }
 .summary-card { display: flex; gap: 12px; align-items: center; background: var(--dark); padding: 10px; border-radius: var(--radius); }
 .checks { display: flex; flex-direction: column; gap: 4px; }
-.check { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; background: var(--dark); border-radius: var(--radius); cursor: pointer; }
+.summary-title { font-size: 15px; line-height: 20px; letter-spacing: -.15px; margin-bottom: 2px; }
+.summary-text .small { line-height: 16px; }
+.check { position: relative; display: flex; gap: 12px; align-items: center; min-height: 48px; padding: 12px; background: var(--dark); border-radius: var(--radius); cursor: pointer; }
+.check.check-all { background: transparent; }
+.check input:focus-visible + .box { outline: 2px solid var(--primary-light); outline-offset: 2px; }
 .check input { position: absolute; opacity: 0; pointer-events: none; }
 .check .box { width: 20px; height: 20px; border: 2px solid var(--grey-500); border-radius: 3px; flex: none; display: grid; place-items: center; }
 .check .box .icw { width: 16px; height: 16px; opacity: 0; }
 .check.on .box { background: var(--primary); border-color: var(--primary); }
 .check.on .box .icw { opacity: 1; }
-.check > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 18px; }
-.check small { color: var(--text-2); font-size: 11px; line-height: 15px; }
+.check .check-text { display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 16px; }
+.check small { color: var(--text-2); font-size: 11px; line-height: 16px; }
 .check-inline { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; }
 .check-inline input { width: 18px; height: 18px; accent-color: var(--primary); }
 

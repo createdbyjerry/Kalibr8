@@ -1381,7 +1381,7 @@
       params: { altitude: 60, speed: 9, frontlap: 75, sidelap: 70 },
       checks: {}
     };
-    ui.draft.checks = ui.draft.checks || {};
+    ui.draft.checks = Object.fromEntries(CHECKS.map((c) => [c.id, ui.draft.checks?.[c.id] ?? false]));
     wiz = { step: existing ? 1 : 0, app: app2, existing: !!existing };
     showWizard();
   }
@@ -1404,15 +1404,21 @@
         rerenderWizard();
       } }) : null,
       wiz.step === 2 ? btn("Save plan", { variant: "dark", onClick: () => saveDraft(false) }) : null,
-      wiz.step === 2 ? btn("Save & start flight", { icon: "takeoff", disabled: !allChecked, title: allChecked ? "" : "Complete the pre-flight checklist", onClick: () => saveDraft(true) }) : null
+      wiz.step === 2 ? btn("Save & start flight", { icon: "takeoff", disabled: !allChecked, title: allChecked ? "" : "Complete the pre-flight checklist", cls: "js-start", onClick: () => saveDraft(true) }) : null
     ];
-    wiz.modal?.el.remove();
-    wiz.modal = modal({ title: wiz.existing ? "Edit Flight" : "New Flight", body: steps[wiz.step](plan), footer, cls: "wizard", onClose: () => {
-      ui.draft = null;
-      ui.drawMode = false;
-      wiz = null;
-      app2.rerender();
-    } });
+    const body = steps[wiz.step](plan);
+    const dlg = wiz.modal?.el.querySelector(".dialog");
+    if (dlg) {
+      dlg.querySelector(".dialog-body").replaceChildren(body);
+      dlg.querySelector(".dialog-foot").replaceChildren(...footer.filter(Boolean));
+    } else {
+      wiz.modal = modal({ title: wiz.existing ? "Edit Flight" : "New Flight", body, footer, cls: "wizard", onClose: () => {
+        ui.draft = null;
+        ui.drawMode = false;
+        wiz = null;
+        app2.rerender();
+      } });
+    }
     app2.refreshMap();
   }
   function rerenderWizard() {
@@ -1534,6 +1540,38 @@
   function stepChecklist(plan) {
     const d = ui.draft;
     const dr = droneById(d.droneId);
+    const checkRow = (label, sub, checked, onToggle, cls = "") => {
+      const input = h("input", { type: "checkbox", checked, onchange: (e) => onToggle(e.target.checked) });
+      const text = h("span", { class: "check-text" }, h("span", { class: "check-label" }, label), sub ? h("small", {}, sub) : null);
+      return { el: h("label", { class: `check ${cls} ${checked ? "on" : ""}` }, input, h("span", { class: "box" }, icon("check")), text), input };
+    };
+    const rows = CHECKS.map((c) => ({ id: c.id, ...checkRow(c.label, c.sub, !!d.checks[c.id], (on2) => {
+      d.checks[c.id] = on2;
+      sync();
+    }) }));
+    const all = checkRow("", null, false, (on2) => {
+      CHECKS.forEach((c) => {
+        d.checks[c.id] = on2;
+      });
+      sync();
+    }, "check-all");
+    function sync() {
+      rows.forEach((r) => {
+        const on2 = !!d.checks[r.id];
+        r.input.checked = on2;
+        r.el.classList.toggle("on", on2);
+      });
+      const allOn = CHECKS.every((c) => d.checks[c.id]);
+      all.input.checked = allOn;
+      all.el.classList.toggle("on", allOn);
+      all.el.querySelector(".check-label").textContent = allOn ? "Deselect All" : "Select All";
+      const start2 = wiz?.modal?.el.querySelector(".js-start");
+      if (start2) {
+        start2.disabled = !allOn;
+        start2.title = allOn ? "" : "Complete the pre-flight checklist";
+      }
+    }
+    sync();
     return h(
       "div",
       { class: "stack" },
@@ -1543,24 +1581,15 @@
         droneImage(dr, "sm"),
         h(
           "div",
-          {},
-          h("b", {}, d.name),
+          { class: "summary-text" },
+          h("div", { class: "summary-title" }, d.name),
           h("div", { class: "muted small" }, `${dr.name} \xB7 ${d.params.altitude} m AGL \xB7 ${d.params.speed} m/s \xB7 ${d.params.frontlap}/${d.params.sidelap}% overlap`),
-          plan ? h("div", { class: "muted small" }, `${plan.areaHa.toFixed(1)} ha \xB7 ~${fmtDur(plan.timeS)} \xB7 ${plan.photos} photos \xB7 ${plan.batteries} battery${plan.batteries > 1 ? " swaps" : ""}`) : null
+          plan ? h("div", { class: "muted small" }, `${plan.areaHa.toFixed(1)} ha \xB7 ~${fmtDur(plan.timeS)} \xB7 ${plan.photos.toLocaleString("en-US")} photos \xB7 ${plan.batteries} battery${plan.batteries > 1 ? " swaps" : ""}`) : null
         )
       ),
       h("div", { class: "eyebrow" }, "Pre-flight checklist"),
-      h("div", { class: "checks" }, CHECKS.map((c) => h(
-        "label",
-        { class: `check ${d.checks[c.id] ? "on" : ""}` },
-        h("input", { type: "checkbox", checked: !!d.checks[c.id], onchange: (e) => {
-          d.checks[c.id] = e.target.checked;
-          rerenderWizard();
-        } }),
-        h("span", { class: "box" }, icon("check")),
-        h("span", {}, h("span", {}, c.label), c.sub ? h("small", {}, c.sub) : null)
-      ))),
-      h("p", { class: "muted small" }, "The plan is stored on this device and uploaded to the aircraft over the direct link \u2014 it does not need a connection.")
+      h("div", { class: "checks" }, all.el, rows.map((r) => r.el)),
+      h("p", { class: "muted small" }, "The plan is stored on this device and uploaded to the aircraft over the direct link \u2014 no connection needed.")
     );
   }
   function saveDraft(andStart) {

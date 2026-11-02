@@ -79,7 +79,8 @@ export function openWizard(app, existing) {
     id: null, name: `Survey ${state.flights.length + 1}`, desc: '', location: 'Miami, FL', tags: [`${state.settings.incident.name} ${new Date().getFullYear()}`],
     droneId: conn?.id || null, poly: [], params: { altitude: 60, speed: 9, frontlap: 75, sidelap: 70 }, checks: {},
   };
-  ui.draft.checks = ui.draft.checks || {};
+  // Every checklist item starts unticked; the pilot ticks each one (or uses Select All).
+  ui.draft.checks = Object.fromEntries(CHECKS.map((c) => [c.id, ui.draft.checks?.[c.id] ?? false]));
   wiz = { step: existing ? 1 : 0, app, existing: !!existing };
   showWizard();
 }
@@ -97,10 +98,18 @@ function showWizard() {
     wiz.step > 0 ? btn('Back', { variant: 'dark', onClick: () => { wiz.step--; rerenderWizard(); } }) : null,
     wiz.step < 2 ? btn('Next', { disabled: !canNext, onClick: () => { wiz.step++; rerenderWizard(); } }) : null,
     wiz.step === 2 ? btn('Save plan', { variant: 'dark', onClick: () => saveDraft(false) }) : null,
-    wiz.step === 2 ? btn('Save & start flight', { icon: 'takeoff', disabled: !allChecked, title: allChecked ? '' : 'Complete the pre-flight checklist', onClick: () => saveDraft(true) }) : null,
+    wiz.step === 2 ? btn('Save & start flight', { icon: 'takeoff', disabled: !allChecked, title: allChecked ? '' : 'Complete the pre-flight checklist', cls: 'js-start', onClick: () => saveDraft(true) }) : null,
   ];
-  wiz.modal?.el.remove();
-  wiz.modal = modal({ title: wiz.existing ? 'Edit Flight' : 'New Flight', body: steps[wiz.step](plan), footer, cls: 'wizard', onClose: () => { ui.draft = null; ui.drawMode = false; wiz = null; app.rerender(); } });
+  const body = steps[wiz.step](plan);
+  const dlg = wiz.modal?.el.querySelector('.dialog');
+  if (dlg) {
+    // Swap the dialog contents in place. Rebuilding the whole modal replays the
+    // backdrop fade-in animation, which made the screen flicker on every click.
+    dlg.querySelector('.dialog-body').replaceChildren(body);
+    dlg.querySelector('.dialog-foot').replaceChildren(...footer.filter(Boolean));
+  } else {
+    wiz.modal = modal({ title: wiz.existing ? 'Edit Flight' : 'New Flight', body, footer, cls: 'wizard', onClose: () => { ui.draft = null; ui.drawMode = false; wiz = null; app.rerender(); } });
+  }
   app.refreshMap();
 }
 function rerenderWizard() { const sc = wiz.modal?.el.querySelector('.dialog-body')?.scrollTop; showWizard(); if (sc) wiz.modal.el.querySelector('.dialog-body').scrollTop = sc; }
@@ -159,16 +168,34 @@ const CHECKS = [
 function stepChecklist(plan) {
   const d = ui.draft;
   const dr = droneById(d.droneId);
+  const checkRow = (label, sub, checked, onToggle, cls = '') => {
+    const input = h('input', { type: 'checkbox', checked, onchange: (e) => onToggle(e.target.checked) });
+    const text = h('span', { class: 'check-text' }, h('span', { class: 'check-label' }, label), sub ? h('small', {}, sub) : null);
+    return { el: h('label', { class: `check ${cls} ${checked ? 'on' : ''}` }, input, h('span', { class: 'box' }, icon('check')), text), input };
+  };
+  const rows = CHECKS.map((c) => ({ id: c.id, ...checkRow(c.label, c.sub, !!d.checks[c.id], (on) => { d.checks[c.id] = on; sync(); }) }));
+  const all = checkRow('', null, false, (on) => { CHECKS.forEach((c) => { d.checks[c.id] = on; }); sync(); }, 'check-all');
+
+  // Update ticks, the Select All / Deselect All row and the start button in place — no re-render.
+  function sync() {
+    rows.forEach((r) => { const on = !!d.checks[r.id]; r.input.checked = on; r.el.classList.toggle('on', on); });
+    const allOn = CHECKS.every((c) => d.checks[c.id]);
+    all.input.checked = allOn;
+    all.el.classList.toggle('on', allOn);
+    all.el.querySelector('.check-label').textContent = allOn ? 'Deselect All' : 'Select All';
+    const start = wiz?.modal?.el.querySelector('.js-start');
+    if (start) { start.disabled = !allOn; start.title = allOn ? '' : 'Complete the pre-flight checklist'; }
+  }
+  sync();
+
   return h('div', { class: 'stack' },
     h('div', { class: 'summary-card' },
       droneImage(dr, 'sm'),
-      h('div', {}, h('b', {}, d.name), h('div', { class: 'muted small' }, `${dr.name} · ${d.params.altitude} m AGL · ${d.params.speed} m/s · ${d.params.frontlap}/${d.params.sidelap}% overlap`),
-        plan ? h('div', { class: 'muted small' }, `${plan.areaHa.toFixed(1)} ha · ~${fmtDur(plan.timeS)} · ${plan.photos} photos · ${plan.batteries} battery${plan.batteries > 1 ? ' swaps' : ''}`) : null)),
+      h('div', { class: 'summary-text' }, h('div', { class: 'summary-title' }, d.name), h('div', { class: 'muted small' }, `${dr.name} · ${d.params.altitude} m AGL · ${d.params.speed} m/s · ${d.params.frontlap}/${d.params.sidelap}% overlap`),
+        plan ? h('div', { class: 'muted small' }, `${plan.areaHa.toFixed(1)} ha · ~${fmtDur(plan.timeS)} · ${plan.photos.toLocaleString('en-US')} photos · ${plan.batteries} battery${plan.batteries > 1 ? ' swaps' : ''}`) : null)),
     h('div', { class: 'eyebrow' }, 'Pre-flight checklist'),
-    h('div', { class: 'checks' }, CHECKS.map((c) => h('label', { class: `check ${d.checks[c.id] ? 'on' : ''}` },
-      h('input', { type: 'checkbox', checked: !!d.checks[c.id], onchange: (e) => { d.checks[c.id] = e.target.checked; rerenderWizard(); } }),
-      h('span', { class: 'box' }, icon('check')), h('span', {}, h('span', {}, c.label), c.sub ? h('small', {}, c.sub) : null)))),
-    h('p', { class: 'muted small' }, 'The plan is stored on this device and uploaded to the aircraft over the direct link — it does not need a connection.'));
+    h('div', { class: 'checks' }, all.el, rows.map((r) => r.el)),
+    h('p', { class: 'muted small' }, 'The plan is stored on this device and uploaded to the aircraft over the direct link — no connection needed.'));
 }
 
 function saveDraft(andStart) {
