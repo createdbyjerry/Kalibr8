@@ -8,6 +8,8 @@ export function openSettings(app) {
   const m = modal({
     title: 'Settings', cls: 'settings',
     body: h('div', { class: 'stack' },
+      h('div', { class: 'eyebrow' }, 'Report author'),
+      field('Your name', inp(s.user, 'name'), 'Printed on every report you generate, with the time it was generated.'),
       h('div', { class: 'eyebrow' }, 'Remote pilot'),
       h('div', { class: 'grid2' }, field('Name', inp(s.pilot, 'name')), field('Certificate', inp(s.pilot, 'cert'))),
       field('Organization', inp(s.pilot, 'org')),

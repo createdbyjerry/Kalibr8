@@ -1,5 +1,5 @@
 // Service worker: caches the whole app on first load so it runs with no network.
-const CACHE = 'kalibr8-v3';
+const CACHE = 'kalibr8-v4';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.bundle.js', './js/main.js', './js/store.js', './js/geo.js', './js/map.js', './js/feed.js', './js/sim.js', './js/ui.js',

@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS = {
   simSpeed: 10,
   network: 'auto', // auto | offline | online  (override for demos)
   factors: { destroyed: 1.0, major: 0.5, minor: 0.15, affected: 0.05, none: 0 },
+  user: { name: 'Jerry Borunda' }, // person generating reports; stamped on every report
   pilot: { name: 'J. Rivera', cert: 'FAA Part 107 #4471902', org: 'County Emergency Management — UAS Team' },
   incident: { name: 'Hurricane Delta', declaration: 'Pending', county: 'Miami-Dade County, FL' },
 };
