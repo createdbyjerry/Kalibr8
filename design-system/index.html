@@ -420,7 +420,7 @@ const COMPONENTS = [
     '<code>.rail-btn</code> in a 64px rail', 'M3 <code>NavigationBarItem</code> (portrait) / <code>NavigationRailItem</code> (landscape)'],
   ['Panel header', 'Title bar for the side drawer. Height is <code>size/header-height</code>. On an Android phone it becomes the bottom-sheet header.', `<div class="x-panelhead">Drone Details ${svg('collapse')}</div>`,
     '<code>.drawer-head</code>', 'Sheet header / M3 <code>TopAppBar</code>'],
-  ['Key-value row', 'Flight-log details such as ID, time, drone, flight plan and location.', `<div style="display:flex;flex-direction:column"><div class="x-kv"><small>Drone</small><span>Parrot Anafi · R0040416A</span></div><div class="x-kv"><small>Location</small><span>Overtown, Miami FL</span></div></div>`,
+  ['Key-value row', 'Flight-log details such as ID, time, drone, flight plan and location.', `<div style="display:flex;flex-direction:column"><div class="x-kv"><small>Drone</small><span>UAS-01 Quad · K8-Q-0416-112</span></div><div class="x-kv"><small>Location</small><span>Overtown, Miami FL</span></div></div>`,
     '<code>.kv</code>', '<code>ListItem(overline, headline)</code>'],
   ['Metric tile', 'Damage summary tile. Tap it to filter by category; selected adds a 1px outline in the severity colour.', `
     <div class="x-tile" style="border-color:var(--color-severity-destroyed)"><b>19</b><small>Destroyed</small></div>
@@ -437,15 +437,15 @@ const COMPONENTS = [
   ['Top pill', 'Map status for connectivity, aircraft link and the outbox. Offline is a normal state here, so it uses the warning colour, not error.', `
     <span class="x-top" style="color:var(--color-status-success)">${svg('cloudDone')}<span style="color:#fff">Online</span></span>
     <span class="x-top" style="color:var(--color-status-warning)">${svg('cloudOff')}<span style="color:#fff">Offline mode</span></span>
-    <span class="x-top" style="color:var(--color-status-success)">${svg('drone')}<span style="color:#fff">Parrot Anafi · Controller USB-C</span></span>
+    <span class="x-top" style="color:var(--color-status-success)">${svg('drone')}<span style="color:#fff">UAS-01 Quad · Controller USB-C</span></span>
     <span class="x-top" style="color:var(--color-on-primary-container)">${svg('send')}<span style="color:#fff">2 reports queued</span></span>`,
     '<code>.top-pill</code>', '<code>Surface</code> pill over the map'],
   ['Map zoom', 'Zoom and fit controls. Button size is <code>size/touch-target</code>: 32 on web, 48 on Android.', `<span class="x-zoom"><span>${svg('add')}</span><span><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg></span></span><span>${svg('area')}</span></span>`,
     '<code>.zoom</code>', 'Stack of M3 <code>SmallFloatingActionButton</code>'],
   ['Drone card', 'Aircraft row in Connect and Select sUAS. The same component on both platforms; width comes from the container.', `
-    <div class="x-drone on"><div class="img">${DRONE}</div><div><h5>Parrot Anafi</h5><p>Serial R0040416A · EO 21MP · ~25 min</p><div class="row">${pill('', 'var(--color-status-success)', 'Live')}${pill('', 'var(--color-status-success)', '98%')}</div></div></div>
-    <div class="x-drone"><div class="img">${DRONE}</div><div><h5>SenseFly eBee X</h5><p>Serial EBX-09X9A2310 · ~55 min</p><div class="row">${pill('', 'var(--color-status-warning)', '20%')}${pill('wifi', 'var(--color-status-warning)', 'Weak')}</div></div></div>
-    <div class="x-drone off"><div class="img">${DRONE}</div><div><h5>Survey Quad (spare)</h5><p>Serial 822-0080090318</p><div class="row">${pill('', 'var(--color-severity-none)', 'Disconnected')}</div></div></div>`,
+    <div class="x-drone on"><div class="img">${DRONE}</div><div><h5>UAS-01 Quad</h5><p>Serial K8-Q-0416-112 · EO 21MP · ~25 min</p><div class="row">${pill('', 'var(--color-status-success)', 'Live')}${pill('', 'var(--color-status-success)', '98%')}</div></div></div>
+    <div class="x-drone"><div class="img">${DRONE}</div><div><h5>UAS-02 Fixed-Wing</h5><p>Serial K8-W-0923-310 · ~55 min</p><div class="row">${pill('', 'var(--color-status-warning)', '20%')}${pill('wifi', 'var(--color-status-warning)', 'Weak')}</div></div></div>
+    <div class="x-drone off"><div class="img">${DRONE}</div><div><h5>UAS-03 Quad (spare)</h5><p>Serial K8-Q-0318-003</p><div class="row">${pill('', 'var(--color-severity-none)', 'Disconnected')}</div></div></div>`,
     '<code>.drone-card</code>', '<code>DroneCard</code> (M3 <code>Card</code>), connected = <code>primaryContainer</code>'],
   ['Finding card', 'One structure in Damage Review. Selected adds a 1px <code>color/primary</code> outline.', `
     <div class="x-find sel"><div class="th"></div><div class="bd"><h5>1916 NW 3rd Ave</h5><p>S-0326 · Residential · AI 94%</p>${sev('destroyed', 'Destroyed')}</div><span class="cost">$215,000</span></div>

@@ -197,9 +197,9 @@
     incident: { name: "Hurricane Delta", declaration: "Pending", county: "Miami-Dade County, FL" }
   };
   var DRONES = [
-    { id: "d1", name: "Parrot Anafi", kind: "quad", serial: "PI040416AA8C112", sensor: "EO 21MP", flightMin: 25, weight: "320g", hfov: 69, aspect: 0.75, imgW: 5344, battery: 98, signal: "strong", available: true, firmware: "1.8.2", sats: 14, storageGB: 54 },
-    { id: "d2", name: "SenseFly eBee X", kind: "wing", serial: "EBX-0X99A2310", sensor: "EO S.O.D.A 20MP", flightMin: 55, weight: "1.4kg", hfov: 64, aspect: 0.67, imgW: 5472, battery: 20, signal: "weak", available: true, firmware: "4.2.0", sats: 11, storageGB: 61 },
-    { id: "d3", name: "Survey Quad (spare)", kind: "quad2", serial: "SQ2-0000000318", sensor: "EO 12MP", flightMin: 30, weight: "895g", hfov: 72, aspect: 0.75, imgW: 4e3, battery: 0, signal: "none", available: false, firmware: "\u2014", sats: 0, storageGB: 0 }
+    { id: "d1", name: "UAS-01 Quad", kind: "quad", serial: "K8-Q-0416-112", sensor: "EO 21MP", flightMin: 25, weight: "320g", hfov: 69, aspect: 0.75, imgW: 5344, battery: 98, signal: "strong", available: true, firmware: "1.8.2", sats: 14, storageGB: 54 },
+    { id: "d2", name: "UAS-02 Fixed-Wing", kind: "wing", serial: "K8-W-0923-310", sensor: "EO 20MP", flightMin: 55, weight: "1.4kg", hfov: 64, aspect: 0.67, imgW: 5472, battery: 20, signal: "weak", available: true, firmware: "4.2.0", sats: 11, storageGB: 61 },
+    { id: "d3", name: "UAS-03 Quad (spare)", kind: "quad2", serial: "K8-Q-0318-003", sensor: "EO 12MP", flightMin: 30, weight: "895g", hfov: 72, aspect: 0.75, imgW: 4e3, battery: 0, signal: "none", available: false, firmware: "\u2014", sats: 0, storageGB: 0 }
   ];
   function fresh() {
     return { settings: structuredClone(DEFAULT_SETTINGS), drones: structuredClone(DRONES), connectedId: null, link: null, flights: [], findings: [], annotations: [], reports: [], seq: 1 };
@@ -210,6 +210,10 @@
       if (raw) {
         const s2 = JSON.parse(raw);
         s2.settings = { ...structuredClone(DEFAULT_SETTINGS), ...s2.settings };
+        (s2.drones || []).forEach((d) => {
+          const def = DRONES.find((x) => x.id === d.id);
+          if (def) Object.assign(d, { name: def.name, serial: def.serial, sensor: def.sensor });
+        });
         return s2;
       }
     } catch (e) {
